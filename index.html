@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Binary100Babies — NibBall</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .game {
+    background: rgba(255,255,255,0.07);
+    backdrop-filter: blur(12px);
+    border-radius: 48px; padding: 32px 24px 40px;
+    max-width: 560px; width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  h1 {
+    text-align: center; font-size: 28px; font-weight: 800;
+    background: linear-gradient(135deg, #f7971e, #ffd200);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px; margin-bottom: 4px;
+  }
+  .tagline {
+    text-align: center; color: rgba(255,255,255,0.4);
+    font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .score-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(0,0,0,0.3); border-radius: 20px; padding: 12px 20px;
+    margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05);
+  }
+  .score-row span { color: rgba(255,255,255,0.5); font-size: 14px; font-weight: 600; }
+  .score-row .val { color: #fff; font-size: 20px; font-weight: 800; }
+
+  .bits { display: flex; justify-content: center; gap: 12px; margin-bottom: 24px; }
+  .bit-btn {
+    width: 80px; height: 100px; border-radius: 20px; border: 3px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05); cursor: pointer; transition: all 0.15s ease;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; position: relative; user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+  .bit-btn:active { transform: scale(0.92); }
+  .bit-btn .weight { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.3); }
+  .bit-btn .lamp {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,255,255,0.08); transition: all 0.2s ease;
+    box-shadow: none;
+  }
+  .bit-btn.on { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.12); }
+  .bit-btn.on .lamp {
+    background: radial-gradient(circle at 35% 30%, #fff 0%, #ffd200 40%, #f7971e 100%);
+    box-shadow: 0 0 24px rgba(255,210,0,0.5);
+  }
+  .bit-btn.on .weight { color: #ffd200; }
+  .bit-btn.correct .lamp {
+    background: radial-gradient(circle at 35% 30%, #fff 0%, #4ade80 40%, #16a34a 100%);
+    box-shadow: 0 0 24px rgba(74,222,128,0.5);
+  }
+  .bit-btn.wrong .lamp {
+    background: radial-gradient(circle at 35% 30%, #fff 0%, #f87171 40%, #dc2626 100%);
+    box-shadow: 0 0 24px rgba(248,113,113,0.5);
+  }
+
+  .decimal-display {
+    text-align: center; margin-bottom: 24px;
+  }
+  .decimal-display .label { color: rgba(255,255,255,0.35); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; }
+  .decimal-display .num {
+    font-size: 64px; font-weight: 900; color: #fff;
+    text-shadow: 0 0 40px rgba(255,255,255,0.15);
+    line-height: 1;
+  }
+  .decimal-display .binary-str {
+    font-size: 16px; color: rgba(255,255,255,0.35);
+    font-family: 'Courier New', monospace; letter-spacing: 4px; margin-top: 2px;
+  }
+
+  .challenge-area {
+    background: rgba(0,0,0,0.25); border-radius: 20px; padding: 16px;
+    margin-bottom: 20px; text-align: center;
+    border: 2px solid rgba(255,255,255,0.06);
+    transition: border-color 0.3s;
+  }
+  .challenge-area.active { border-color: rgba(251,191,36,0.3); }
+  .challenge-area .prompt { color: rgba(255,255,255,0.4); font-size: 13px; margin-bottom: 4px; }
+  .challenge-area .target {
+    font-size: 56px; font-weight: 900; color: #fbbf24;
+    text-shadow: 0 0 30px rgba(251,191,36,0.2);
+  }
+  .challenge-area .hint {
+    font-size: 14px; margin-top: 6px; font-weight: 600; transition: all 0.3s;
+  }
+  .challenge-area .hint.match { color: #4ade80; }
+  .challenge-area .hint.nomatch { color: #f87171; }
+  .challenge-area .hint.waiting { color: rgba(255,255,255,0.3); }
+
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .btn {
+    padding: 12px 28px; border-radius: 16px; border: none; font-size: 16px;
+    font-weight: 700; cursor: pointer; transition: all 0.15s ease;
+    flex: 1; min-width: 120px;
+  }
+  .btn:active { transform: scale(0.95); }
+  .btn-primary { background: linear-gradient(135deg, #f7971e, #ffd200); color: #1a1a2e; }
+  .btn-primary:hover { box-shadow: 0 4px 20px rgba(255,210,0,0.3); }
+  .btn-success { background: linear-gradient(135deg, #22c55e, #4ade80); color: #1a1a2e; }
+  .btn-success:hover { box-shadow: 0 4px 20px rgba(74,222,128,0.3); }
+  .btn-danger { background: linear-gradient(135deg, #ef4444, #f87171); color: #fff; }
+  .btn-danger:hover { box-shadow: 0 4px 20px rgba(248,113,113,0.3); }
+  .btn-outline {
+    background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6);
+    border: 2px solid rgba(255,255,255,0.12);
+  }
+  .btn-outline:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+  .celebration {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+    z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.4s;
+  }
+  .celebration.show { opacity: 1; pointer-events: auto; }
+  .celebration .box {
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    border-radius: 40px; padding: 40px; text-align: center;
+    border: 2px solid rgba(251,191,36,0.3); max-width: 400px; width: 90%;
+  }
+  .celebration .box h2 { font-size: 48px; margin-bottom: 8px; }
+  .celebration .box p { color: rgba(255,255,255,0.6); font-size: 18px; margin-bottom: 20px; }
+  .celebration .box .big { font-size: 72px; margin-bottom: 8px; }
+
+  .floaties { position: fixed; inset: 0; pointer-events: none; z-index: 101; overflow: hidden; }
+  .floaty {
+    position: absolute; font-size: 24px; animation: floatUp 1.5s ease-out forwards;
+  }
+  @keyframes floatUp {
+    0% { opacity: 1; transform: translateY(0) scale(0.5); }
+    100% { opacity: 0; transform: translateY(-200px) scale(1.2); }
+  }
+
+  @media (max-width: 500px) {
+    .game { border-radius: 28px; padding: 20px 16px 28px; }
+    .bits { gap: 8px; }
+    .bit-btn { width: 64px; height: 84px; }
+    .bit-btn .lamp { width: 32px; height: 32px; }
+    .decimal-display .num { font-size: 48px; }
+    .challenge-area .target { font-size: 42px; }
+    .btn { font-size: 14px; padding: 10px 16px; min-width: 80px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="celebration" id="celebration">
+  <div class="box">
+    <div class="big">🎉</div>
+    <h2>✨ Correct! ✨</h2>
+    <p id="celebrationMsg">You got it!</p>
+    <button class="btn btn-primary" onclick="closeCelebration(); nextChallenge();">Next!</button>
+  </div>
+</div>
+<div class="floaties" id="floaties"></div>
+
+<div class="game">
+  <h1>Binary100Babies</h1>
+  <p class="tagline">NibBall — 4 Bits. Endless Fun.</p>
+
+  <div class="score-row">
+    <span>Score</span>
+    <span class="val" id="scoreDisplay">0</span>
+  </div>
+
+  <div class="bits" role="group" aria-label="Binary bits">
+    <button class="bit-btn" data-bit="3" onclick="toggleBit(3)">
+      <div class="lamp"></div>
+      <span class="weight">8</span>
+    </button>
+    <button class="bit-btn" data-bit="2" onclick="toggleBit(2)">
+      <div class="lamp"></div>
+      <span class="weight">4</span>
+    </button>
+    <button class="bit-btn" data-bit="1" onclick="toggleBit(1)">
+      <div class="lamp"></div>
+      <span class="weight">2</span>
+    </button>
+    <button class="bit-btn" data-bit="0" onclick="toggleBit(0)">
+      <div class="lamp"></div>
+      <span class="weight">1</span>
+    </button>
+  </div>
+
+  <div class="decimal-display">
+    <div class="label">You made</div>
+    <div class="num" id="decimalNum">0</div>
+    <div class="binary-str" id="binaryStr">0000</div>
+  </div>
+
+  <div class="challenge-area" id="challengeArea">
+    <div class="prompt">🌟 Challenge — make this number:</div>
+    <div class="target" id="targetNum">—</div>
+    <div class="hint waiting" id="challengeHint">Set the bits to match!</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-primary" onclick="startChallenge()">🌟 Challenge</button>
+    <button class="btn btn-outline" onclick="resetBits()">↺ Reset</button>
+  </div>
+</div>
+
+<script>
+let bits = [0, 0, 0, 0];
+let score = 0;
+let challengeTarget = null;
+let challengeDone = false;
+
+const weights = [1, 2, 4, 8];
+
+function getValue() {
+  return bits.reduce((sum, b, i) => sum + b * weights[i], 0);
+}
+
+function updateDisplay() {
+  const val = getValue();
+  document.getElementById('decimalNum').textContent = val;
+  document.getElementById('binaryStr').textContent = bits.slice().reverse().join('');
+
+  const btns = document.querySelectorAll('.bit-btn');
+  btns.forEach((btn, i) => {
+    const isOn = bits[i] === 1;
+    btn.classList.toggle('on', isOn);
+    btn.classList.toggle('correct', false);
+    btn.classList.toggle('wrong', false);
+  });
+
+  if (challengeTarget !== null && !challengeDone) {
+    const hint = document.getElementById('challengeHint');
+    if (val === challengeTarget) {
+      hint.textContent = '✅ Perfect match!';
+      hint.className = 'hint match';
+      btns.forEach(b => { b.classList.add('correct'); b.classList.remove('on', 'wrong'); });
+      challengeDone = true;
+      score++;
+      document.getElementById('scoreDisplay').textContent = score;
+      setTimeout(showCelebration, 400);
+    } else {
+      const diff = val - challengeTarget;
+      if (diff > 0) {
+        hint.textContent = '⬇ Too high! Turn some bits off.';
+      } else {
+        hint.textContent = '⬆ Too low! Turn some bits on.';
+      }
+      hint.className = 'hint nomatch';
+      btns.forEach(b => b.classList.remove('correct', 'wrong'));
+    }
+  }
+}
+
+function toggleBit(index) {
+  if (challengeDone) return;
+  bits[index] = bits[index] === 0 ? 1 : 0;
+  updateDisplay();
+}
+
+function resetBits() {
+  bits = [0, 0, 0, 0];
+  challengeTarget = null;
+  challengeDone = false;
+  document.getElementById('challengeArea').classList.remove('active');
+  document.getElementById('targetNum').textContent = '—';
+  document.getElementById('challengeHint').textContent = 'Set the bits to match!';
+  document.getElementById('challengeHint').className = 'hint waiting';
+  updateDisplay();
+}
+
+function startChallenge() {
+  resetBits();
+  challengeTarget = Math.floor(Math.random() * 16);
+  document.getElementById('challengeArea').classList.add('active');
+  document.getElementById('targetNum').textContent = challengeTarget;
+  document.getElementById('challengeHint').textContent = '⬆⬇ Set the bits!';
+  document.getElementById('challengeHint').className = 'hint waiting';
+  challengeDone = false;
+  updateDisplay();
+}
+
+function nextChallenge() {
+  startChallenge();
+}
+
+function showCelebration() {
+  const el = document.getElementById('celebration');
+  document.getElementById('celebrationMsg').textContent = challengeTarget + ' = ' + bits.slice().reverse().join('');
+  el.classList.add('show');
+  spawnFloaties();
+}
+
+function closeCelebration() {
+  document.getElementById('celebration').classList.remove('show');
+}
+
+function spawnFloaties() {
+  const container = document.getElementById('floaties');
+  const emojis = ['⭐','🌟','✨','🎉','🎊','💡','🔢','✅','1','0'];
+  for (let i = 0; i < 18; i++) {
+    const el = document.createElement('div');
+    el.className = 'floaty';
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    el.style.left = (5 + Math.random() * 90) + '%';
+    el.style.top = (60 + Math.random() * 40) + '%';
+    el.style.animationDuration = (1 + Math.random()) + 's';
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 2500);
+  }
+}
+
+updateDisplay();
+</script>
+</body>
+</html>
